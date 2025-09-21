@@ -8,7 +8,7 @@ def clean_notebook(path_in, path_out=None):
     if "widgets" in nb.get("metadata", {}):
         del nb["metadata"]["widgets"]
 
-    # Clear only widget outputs, keep normal outputs (plots, text)
+    # Clear widget outputs but keep figures/text outputs
     for cell in nb.cells:
         if "outputs" in cell:
             cell["outputs"] = [
