@@ -1,0 +1,32 @@
+name: Clean Notebooks
+
+on:
+  workflow_call:   # makes this reusable
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install nbformat
+
+      - name: Clean notebooks
+        run: |
+          for nb in $(find . -name "*.ipynb"); do
+            python .github/scripts/clean_notebook.py "$nb"
+          done
+
+      - name: Commit cleaned notebooks
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Clean notebooks" || echo "No changes"
+          git push
