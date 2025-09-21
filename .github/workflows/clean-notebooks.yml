@@ -6,7 +6,7 @@ on:
       - "**/*.ipynb"
 
 permissions:
-  contents: write   # 👈 allow committing cleaned notebooks back
+  contents: write
 
 jobs:
   clean:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          persist-credentials: true   # needed so the bot can push
+          persist-credentials: true 
 
       - name: Set up Python
         uses: actions/setup-python@v5
