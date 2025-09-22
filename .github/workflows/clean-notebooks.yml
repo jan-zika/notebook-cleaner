@@ -24,8 +24,7 @@ jobs:
           python-version: "3.x"
 
       - name: Run notebook cleaner
-        working-directory: target
-        run: python ../cleaner/clean_notebooks.py
+        run: python cleaner/clean_notebooks.py target
         env:
           REPO: ${{ github.repository }}
           BRANCH: ${{ github.ref_name }}
