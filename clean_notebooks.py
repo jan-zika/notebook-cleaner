@@ -14,6 +14,7 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
     rel_path = path.relative_to(repo_root)
     changed = False
 
+    # --- Clean widget outputs ---
     for cell in nb.get("cells", []):
         if "outputs" in cell:
             new_outputs = []
@@ -37,6 +38,11 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
                     new_outputs.append(out)
             if changed:
                 cell["outputs"] = new_outputs
+
+    # --- Clean widget metadata at notebook level ---
+    if "metadata" in nb and "widgets" in nb["metadata"]:
+        del nb["metadata"]["widgets"]
+        changed = True
 
     if changed:
         with path.open("w", encoding="utf-8") as f:
