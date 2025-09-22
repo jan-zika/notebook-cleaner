@@ -16,7 +16,7 @@ def extract_widget_labels(nb):
             state = entry.get("state", {})
             desc = state.get("description")
             model = entry.get("model_name", "Widget")
-            if desc:
+            if desc and model:
                 label = f"{model} ({desc})"
             elif model:
                 label = model
@@ -62,7 +62,7 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
                 if len(removed_labels) == 1:
                     text = removed_labels[0]
                     placeholder_md = (
-                        f"**Interactive widget removed: {text}**\n\n"
+                        f"**Interactive widget (use Colab to view): {text}**\n\n"
                         f"[![Open In Colab]"
                         f"(https://colab.research.google.com/assets/colab-badge.svg)]"
                         f"(https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
@@ -70,7 +70,7 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
                 else:
                     list_text = "\n".join(f"- {label}" for label in removed_labels)
                     placeholder_md = (
-                        f"**Interactive widgets removed:**\n"
+                        f"**Interactive widgets (use Colab to view):**\n"
                         f"{list_text}\n\n"
                         f"[![Open In Colab]"
                         f"(https://colab.research.google.com/assets/colab-badge.svg)]"
