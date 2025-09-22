@@ -1,0 +1,30 @@
+name: Notebook Cleaner
+
+on:
+  workflow_call:
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Run cleaner
+        run: |
+          sed -i "s/{{GITHUB_REPOSITORY}}/${GITHUB_REPOSITORY}/g" clean_notebooks.py
+          sed -i "s/{{GITHUB_REF_NAME}}/${GITHUB_REF_NAME}/g" clean_notebooks.py
+          python clean_notebooks.py
+      - name: Commit cleaned notebooks
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add .
+            git commit -m "Clean notebooks (remove interactive widgets)"
+            git push
+          else
+            echo "Nothing to commit."
+          fi
