@@ -17,27 +17,26 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
     # --- Clean widget outputs ---
     for cell in nb.get("cells", []):
         if "outputs" in cell:
-            new_outputs = []
-            for out in cell["outputs"]:
-                if (
-                    out.get("output_type") == "display_data"
-                    and "application/vnd.jupyter.widget-view+json" in out.get("data", {})
-                ):
-                    new_outputs.append({
-                        "output_type": "display_data",
-                        "data": {
-                            "text/plain": [
-                                "Interactive widget\n",
-                                f"🔗 [Open in Colab](https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
-                            ]
-                        },
-                        "metadata": {}
-                    })
-                    changed = True
-                else:
-                    new_outputs.append(out)
-            if changed:
-                cell["outputs"] = new_outputs
+            has_widget = any(
+                out.get("output_type") == "display_data"
+                and "application/vnd.jupyter.widget-view+json" in out.get("data", {})
+                for out in cell["outputs"]
+            )
+            if has_widget:
+                # Replace all outputs in this cell with a single placeholder
+                cell["outputs"] = [{
+                    "output_type": "display_data",
+                    "data": {
+                        "text/markdown": [
+                            f"**Interactive widget**  \n"
+                            f"[![Open In Colab]"
+                            f"(https://colab.research.google.com/assets/colab-badge.svg)]"
+                            f"(https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
+                        ]
+                    },
+                    "metadata": {}
+                }]
+                changed = True
 
     # --- Clean widget metadata at notebook level ---
     if "metadata" in nb and "widgets" in nb["metadata"]:
