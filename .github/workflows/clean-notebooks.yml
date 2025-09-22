@@ -1,22 +1,25 @@
-name: Notebook Cleaner
+name: Clean Notebooks
 
 on:
   workflow_call:
 
 jobs:
-  clean:
+  clean-notebooks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Run cleaner
-        run: |
-          sed -i "s/{{GITHUB_REPOSITORY}}/${GITHUB_REPOSITORY}/g" clean_notebooks.py
-          sed -i "s/{{GITHUB_REF_NAME}}/${GITHUB_REF_NAME}/g" clean_notebooks.py
-          python clean_notebooks.py
+
+      - name: Run notebook cleaner
+        run: python clean_notebooks.py
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+
       - name: Commit cleaned notebooks
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
