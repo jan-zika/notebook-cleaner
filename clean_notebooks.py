@@ -21,15 +21,14 @@ def extract_widget_info(nb):
         pass
     return info
 
-def reveal_hidden_images(out):
-    """Detect <img ... style="display:none"> and strip the CSS."""
+def reveal_zerosized_images(out):
+    """Detect <img ... style="width:1px;height:1px"> and strip the sizing."""
     if "text/html" in out.get("data", {}):
         new_chunks = []
         changed = False
         for chunk in out["data"]["text/html"]:
-            if "display:none" in chunk:
-                # remove display:none from style attributes
-                fixed = re.sub(r'style=["\']?[^"\']*display\s*:\s*none[^"\']*["\']?', '', chunk)
+            if "width:1px" in chunk and "height:1px" in chunk:
+                fixed = re.sub(r'style=["\']?[^"\']*(width\s*:\s*1px;?\s*height\s*:\s*1px;?)[^"\']*["\']?', '', chunk)
                 new_chunks.append(fixed)
                 changed = True
             else:
@@ -48,7 +47,6 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
     rel_path = path.relative_to(repo_root)
     changed = False
 
-    # Collect widget info
     widget_info = extract_widget_info(nb)
 
     for cell in nb.get("cells", []):
@@ -57,27 +55,21 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
             removed_labels = []
 
             for out in cell["outputs"]:
-                # Handle widget views
                 if out.get("output_type") == "display_data":
                     widget_view = out.get("data", {}).get("application/vnd.jupyter.widget-view+json")
                     if widget_view:
                         model_id = widget_view.get("model_id")
                         model_name, label = widget_info.get(model_id, ("", f"Widget {model_id}"))
 
-                        if model_name in {"OutputModel"}:
-                            # Strip OutputModel widget wrapper but try to keep safe data (like PNG inside HTML)
-                            continue
-                        else:
-                            # Strip UI widgets (sliders, VBox, etc.)
-                            removed_labels.append(label)
-                            changed = True
-                            continue
+                        # Strip all widget UI elements
+                        removed_labels.append(label)
+                        changed = True
+                        continue
                     else:
-                        # Non-widget display_data, keep but check for hidden images
-                        safe_outputs.append(reveal_hidden_images(out))
+                        # Non-widget display_data
+                        safe_outputs.append(reveal_zerosized_images(out))
                 else:
-                    # Non-display_data outputs
-                    safe_outputs.append(reveal_hidden_images(out))
+                    safe_outputs.append(reveal_zerosized_images(out))
 
             if removed_labels:
                 list_text = "\n".join(f"- {label}" for label in removed_labels)
@@ -88,7 +80,6 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
                     f"(https://colab.research.google.com/assets/colab-badge.svg)]"
                     f"(https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
                 )
-                # Insert placeholder before safe outputs
                 cell["outputs"] = [{
                     "output_type": "display_data",
                     "data": {"text/markdown": [placeholder_md]},
@@ -97,7 +88,6 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
             else:
                 cell["outputs"] = safe_outputs
 
-    # Remove widget metadata (state no longer needed)
     if "metadata" in nb and "widgets" in nb["metadata"]:
         del nb["metadata"]["widgets"]
         changed = True
