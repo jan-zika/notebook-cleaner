@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-import os, sys, json, pathlib
+import os, json, pathlib
 
-# Read env vars from GitHub Actions
 repo = os.environ.get("REPO", "unknown/repo")
 branch = os.environ.get("BRANCH", "main")
 
-def clean_notebook(path: pathlib.Path):
+def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
     """Remove interactive widget outputs and replace with placeholder + Colab link."""
     try:
         with path.open(encoding="utf-8") as f:
             nb = json.load(f)
     except Exception:
-        return False  # skip non-notebooks or invalid JSON
+        return False  # skip invalid notebooks
 
+    rel_path = path.relative_to(repo_root)  # ensure nice GitHub-friendly path
     changed = False
+
     for cell in nb.get("cells", []):
         if "outputs" in cell:
             new_outputs = []
@@ -22,13 +23,12 @@ def clean_notebook(path: pathlib.Path):
                     out.get("output_type") == "display_data"
                     and "application/vnd.jupyter.widget-view+json" in out.get("data", {})
                 ):
-                    # Replace widget output with placeholder
                     new_outputs.append({
                         "output_type": "display_data",
                         "data": {
                             "text/plain": [
                                 "Interactive widget\n",
-                                f"🔗 [Open in Colab](https://colab.research.google.com/github/{repo}/blob/{branch}/{path})"
+                                f"🔗 [Open in Colab](https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
                             ]
                         },
                         "metadata": {}
@@ -46,11 +46,11 @@ def clean_notebook(path: pathlib.Path):
     return changed
 
 def main():
-    root = pathlib.Path(".")
+    repo_root = pathlib.Path(".").resolve()
     changed_files = []
-    for ipynb in root.rglob("*.ipynb"):
-        if clean_notebook(ipynb):
-            changed_files.append(str(ipynb))
+    for ipynb in repo_root.rglob("*.ipynb"):
+        if clean_notebook(ipynb, repo_root):
+            changed_files.append(str(ipynb.relative_to(repo_root)))
     if changed_files:
         print("Cleaned:", changed_files)
     else:
