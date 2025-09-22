@@ -16,7 +16,7 @@ def extract_widget_labels(nb):
             state = entry.get("state", {})
             desc = state.get("description")
             model = entry.get("model_name", "Widget")
-            if desc and model:
+            if desc:
                 label = f"{model} ({desc})"
             elif model:
                 label = model
