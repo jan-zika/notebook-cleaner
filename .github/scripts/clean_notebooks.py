@@ -1,60 +1,44 @@
-#!/usr/bin/env python3
-import os, json, pathlib
+name: Clean Notebooks
 
-repo = os.environ.get("REPO", "unknown/repo")
-branch = os.environ.get("BRANCH", "main")
+on:
+  workflow_call:
 
-def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
-    """Remove interactive widget outputs and replace with placeholder + Colab link."""
-    try:
-        with path.open(encoding="utf-8") as f:
-            nb = json.load(f)
-    except Exception:
-        return False  # skip invalid notebooks
+jobs:
+  clean-notebooks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          path: target
 
-    rel_path = path.relative_to(repo_root)  # ensure nice GitHub-friendly path
-    changed = False
+      - name: Checkout cleaner repo
+        uses: actions/checkout@v4
+        with:
+          repository: jan-zika/notebook-cleaner
+          path: cleaner
 
-    for cell in nb.get("cells", []):
-        if "outputs" in cell:
-            new_outputs = []
-            for out in cell["outputs"]:
-                if (
-                    out.get("output_type") == "display_data"
-                    and "application/vnd.jupyter.widget-view+json" in out.get("data", {})
-                ):
-                    new_outputs.append({
-                        "output_type": "display_data",
-                        "data": {
-                            "text/plain": [
-                                "Interactive widget\n",
-                                f"🔗 [Open in Colab](https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
-                            ]
-                        },
-                        "metadata": {}
-                    })
-                    changed = True
-                else:
-                    new_outputs.append(out)
-            if changed:
-                cell["outputs"] = new_outputs
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
-    if changed:
-        with path.open("w", encoding="utf-8") as f:
-            json.dump(nb, f, indent=1, ensure_ascii=False)
-            f.write("\n")
-    return changed
+      - name: Run notebook cleaner
+        working-directory: target
+        run: python ../cleaner/clean_notebooks.py
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
 
-def main():
-    repo_root = pathlib.Path(".").resolve()
-    changed_files = []
-    for ipynb in repo_root.rglob("*.ipynb"):
-        if clean_notebook(ipynb, repo_root):
-            changed_files.append(str(ipynb.relative_to(repo_root)))
-    if changed_files:
-        print("Cleaned:", changed_files)
-    else:
-        print("No widget outputs found.")
-
-if __name__ == "__main__":
-    main()
+      - name: Commit cleaned notebooks
+        working-directory: target
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add .
+            git commit -m "Clean notebooks (remove interactive widgets)"
+            git push
+          else
+            echo "Nothing to commit."
+          fi
