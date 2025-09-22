@@ -34,14 +34,14 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
             if removed > 0:
                 if removed == 1:
                     placeholder_md = (
-                        f"**Interactive widget (use Colab to view)**\n\n"
+                        f"**Interactive widget (run in Colab to view)**\n\n"
                         f"[![Open In Colab]"
                         f"(https://colab.research.google.com/assets/colab-badge.svg)]"
                         f"(https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
                     )
                 else:
                     placeholder_md = (
-                        f"**Interactive widgets (use Colab to view)**\n\n"
+                        f"**Interactive widgets (run in Colab to view)**\n\n"
                         f"[![Open In Colab]"
                         f"(https://colab.research.google.com/assets/colab-badge.svg)]"
                         f"(https://colab.research.google.com/github/{repo}/blob/{branch}/{rel_path})"
