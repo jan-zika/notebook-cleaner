@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-import sys, json, pathlib
+import os, sys, json, pathlib
+
+# Read env vars from GitHub Actions
+repo = os.environ.get("REPO", "unknown/repo")
+branch = os.environ.get("BRANCH", "main")
 
 def clean_notebook(path: pathlib.Path):
+    """Remove interactive widget outputs and replace with placeholder + Colab link."""
     try:
         with path.open(encoding="utf-8") as f:
             nb = json.load(f)
@@ -17,14 +22,13 @@ def clean_notebook(path: pathlib.Path):
                     out.get("output_type") == "display_data"
                     and "application/vnd.jupyter.widget-view+json" in out.get("data", {})
                 ):
-                    # Replace widget with placeholder text
+                    # Replace widget output with placeholder
                     new_outputs.append({
                         "output_type": "display_data",
                         "data": {
                             "text/plain": [
                                 "Interactive widget\n",
-                                "🔗 [Open in Colab](https://colab.research.google.com/github/"
-                                "{{GITHUB_REPOSITORY}}/blob/{{GITHUB_REF_NAME}}/{path})"
+                                f"🔗 [Open in Colab](https://colab.research.google.com/github/{repo}/blob/{branch}/{path})"
                             ]
                         },
                         "metadata": {}
