@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-import os, json, pathlib
+import os, sys, json, pathlib
 
 repo = os.environ.get("REPO", "unknown/repo")
 branch = os.environ.get("BRANCH", "main")
 
 def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
-    """Remove interactive widget outputs and replace with placeholder + Colab link."""
     try:
         with path.open(encoding="utf-8") as f:
             nb = json.load(f)
     except Exception:
-        return False  # skip invalid notebooks
+        return False
 
-    rel_path = path.relative_to(repo_root)  # ensure nice GitHub-friendly path
+    rel_path = path.relative_to(repo_root)
     changed = False
 
     for cell in nb.get("cells", []):
@@ -46,7 +45,8 @@ def clean_notebook(path: pathlib.Path, repo_root: pathlib.Path):
     return changed
 
 def main():
-    repo_root = pathlib.Path(".").resolve()
+    # First argument is the repo root (e.g. "target")
+    repo_root = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else pathlib.Path(".").resolve()
     changed_files = []
     for ipynb in repo_root.rglob("*.ipynb"):
         if clean_notebook(ipynb, repo_root):
